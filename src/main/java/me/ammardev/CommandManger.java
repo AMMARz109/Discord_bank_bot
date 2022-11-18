@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +64,12 @@ public class CommandManger extends ListenerAdapter {
         Guild guild = event.getGuild();
         switch (event.getButton().getId()){
             case "daily":{
+                if (!isPeriodReady(member, guild)){
+                    event.reply("You already claimed your daily today!").setEphemeral(true).queue();
+                    return;
+                }
                 edit_balance(member, guild, +300);
+                startPeriod(member, guild);
                 event.reply("You took the daily reward!\n+300").setEphemeral(true).queue();
             }
         }
@@ -172,5 +178,68 @@ public class CommandManger extends ListenerAdapter {
         }
     }
 
+    void startPeriod(Member member, Guild guild){
+        try {
+            LocalDateTime current_time = LocalDateTime.now();
+
+
+            String id = member.getId();
+            boolean found = false;
+            List<Period> periods = loadPeriods(guild);
+            for (Period p: periods){
+                if (p.getId().equals(id)){
+                    p.setTime(current_time.getDayOfYear());
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found){
+                Period period = new Period(id, current_time.getDayOfYear());
+                periods.add(period);
+            }
+
+            File dir = Paths.get(Statics.bankPath + guild.getName() + " - " + guild.getId()).toFile();
+            File file = Paths.get(dir.getAbsolutePath() + "/periods.json").toFile();
+
+            if (!dir.exists()){
+                dir.mkdirs();
+                file.createNewFile();
+            }
+            Gson gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .create();
+            try (Writer writer = new FileWriter(file)){
+                writer.write(gson.toJson(periods.toArray()));
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    List <Period> loadPeriods(Guild guild){
+        try {
+            File dir = Paths.get(Statics.bankPath + guild.getName() + " - " + guild.getId()).toFile();
+            File file = Paths.get(dir.getAbsolutePath() + "/periods.json").toFile();
+            Gson gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .create();
+
+            Period[] periods = gson.fromJson(new FileReader(file), Period[].class);
+            return new ArrayList<>(List.of(periods));
+        } catch (FileNotFoundException e) {
+            System.out.println("Returned new array");
+            return new ArrayList<>();
+        }
+    }
+
+    boolean isPeriodReady(Member member, Guild guild){
+        for (Period period: loadPeriods(guild)){
+            if (period.getId().equals(member.getId())){
+                return period.getTime() < LocalDateTime.now().getDayOfYear();
+            }
+        }
+        return true;
+    }
 
 }
