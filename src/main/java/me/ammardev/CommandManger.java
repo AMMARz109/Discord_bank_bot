@@ -49,12 +49,37 @@ public class CommandManger extends ListenerAdapter {
         if (event.getName().equals("daily")){
 
 
-            Button button = Button.success("daily", "Get your daily").withEmoji(Emoji.fromUnicode("\uD83D\uDCB0"));
+            Button button = Button.success("daily", "Get your daily")
+                    .withEmoji(Emoji.fromUnicode("\uD83D\uDCB0"));
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(new Color(0, 255, 167))
-                    .setTitle("\uD835\uDC01\uD835\uDC00\uD835\uDC0D\uD835\uDC0A");
+                    .setTitle("\uD835\uDC01\uD835\uDC00\uD835\uDC0D\uD835\uDC0A")
+                    .setDescription("get your daily reward");
 
             event.replyEmbeds(embed.build()).setActionRow(button).queue();
+        }
+
+        if (event.getName().equals("shop")){
+
+            List<Button> buttons = new ArrayList<>();
+
+            Button vmute = Button.danger("voice mute", "Server voice mute [3min]\n2500$")
+                    .withEmoji(Emoji.fromUnicode("\uD83D\uDCA5"));
+
+            Button cmute = Button.danger("chat mute", "Server chat mute [3min]\n2500$")
+                    .withEmoji(Emoji.fromUnicode("\uD83D\uDCA5"));
+
+            buttons.add(vmute);
+            buttons.add(cmute);
+
+
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setColor(new Color(0, 255, 167))
+                    .setTitle("\uD835\uDD4Aℍ\uD835\uDD46ℙ")
+                    .setDescription("Spend your money here!");
+
+            event.replyEmbeds(embed.build()).setActionRow(buttons).queue();
         }
     }
 
@@ -72,6 +97,8 @@ public class CommandManger extends ListenerAdapter {
                 startPeriod(member, guild);
                 event.reply("You took the daily reward!\n+300").setEphemeral(true).queue();
             }
+            case "voice mute":
+            case "chat mute":
         }
     }
 
@@ -236,7 +263,7 @@ public class CommandManger extends ListenerAdapter {
     boolean isPeriodReady(Member member, Guild guild){
         for (Period period: loadPeriods(guild)){
             if (period.getId().equals(member.getId())){
-                return period.getTime() < LocalDateTime.now().getDayOfYear();
+                return period.getTime() != LocalDateTime.now().getDayOfYear();
             }
         }
         return true;

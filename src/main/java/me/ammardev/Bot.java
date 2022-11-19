@@ -29,6 +29,7 @@ public class Bot {
 
         jda.upsertCommand("balance", "Check your bank balance").queue();
         jda.upsertCommand("daily", "Daily bonus").queue();
+        jda.upsertCommand("shop", "Bank shop").queue();
 
     }
 }
