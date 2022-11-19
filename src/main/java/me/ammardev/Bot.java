@@ -13,6 +13,7 @@ import java.util.Scanner;
 public class Bot {
 
     public static void main(String[] args) throws InterruptedException {
+
         Scanner scanner = new Scanner(System.in);
         String token = scanner.nextLine();
         JDABuilder builder = JDABuilder
