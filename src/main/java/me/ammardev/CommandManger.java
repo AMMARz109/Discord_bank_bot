@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -15,11 +16,13 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CommandManger extends ListenerAdapter {
+
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event) {
@@ -30,6 +33,7 @@ public class CommandManger extends ListenerAdapter {
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         Member member = event.getMember();
         Guild guild = member.getGuild();
+        String memberName = member.getNickname() == null? member.getEffectiveName(): member.getNickname();
         if (event.getName().equals("balance")){
             if (!inBank(member, guild)){
                 addMember(member, event.getGuild());
@@ -47,8 +51,6 @@ public class CommandManger extends ListenerAdapter {
         }
 
         if (event.getName().equals("daily")){
-
-
             Button button = Button.success("daily", "Get your daily")
                     .withEmoji(Emoji.fromUnicode("\uD83D\uDCB0"));
             EmbedBuilder embed = new EmbedBuilder()
@@ -63,14 +65,9 @@ public class CommandManger extends ListenerAdapter {
 
             List<Button> buttons = new ArrayList<>();
 
-            Button vmute = Button.danger("voice mute", "Server voice mute [3min]\n2500$")
+            Button timeout = Button.danger("timeout", "timeout someone for [3min]\n2500$")
                     .withEmoji(Emoji.fromUnicode("\uD83D\uDCA5"));
-
-            Button cmute = Button.danger("chat mute", "Server chat mute [3min]\n2500$")
-                    .withEmoji(Emoji.fromUnicode("\uD83D\uDCA5"));
-
-            buttons.add(vmute);
-            buttons.add(cmute);
+            buttons.add(timeout);
 
 
 
@@ -80,6 +77,50 @@ public class CommandManger extends ListenerAdapter {
                     .setDescription("Spend your money here!");
 
             event.replyEmbeds(embed.build()).setActionRow(buttons).queue();
+        }
+
+        if (event.getName().equals("timeout")){
+            try {
+                Member target = event.getOption("target").getAsMember();
+
+
+                if (event.getOption("target") instanceof Role || target == null){
+                    event.reply("You can't mention roles!").setEphemeral(true).queue();
+                    return;
+                }
+                String targetName = target.getNickname() == null? target.getEffectiveName(): target.getNickname();
+                if (target.isOwner()){
+                    event.reply("You can't punish owner!").setEphemeral(true).queue();
+                    return;
+                }
+
+                if (check_for_balance(member, guild) < 2500){
+                    event.reply("You don't have enough money!")
+                            .setEphemeral(true)
+                            .queue();
+                    return;
+                }
+
+                if (member.getVoiceState() != null){
+                    if (target.getVoiceState().isGuildMuted()){
+                        event.reply("User already muted").setEphemeral(true).queue();
+                        return;
+                    }
+                }
+
+                if (!event.getGuild().getMembers().contains(target)){
+                    event.reply("User not found!").setEphemeral(true).queue();
+                    return;
+                }
+
+
+                target.timeoutFor(Duration.ofMinutes(3)).submit();
+                edit_balance(member, guild, -2500);
+                event.reply(String.format("@%s timeouted @%s", memberName, targetName)).queue();
+            }catch (Exception e){
+                e.printStackTrace();
+                event.reply("Failed to mute user, he is to powerful").setEphemeral(true).queue();
+            }
         }
     }
 
@@ -97,8 +138,11 @@ public class CommandManger extends ListenerAdapter {
                 startPeriod(member, guild);
                 event.reply("You took the daily reward!\n+300").setEphemeral(true).queue();
             }
-            case "voice mute":
-            case "chat mute":
+            case "timeout":{
+                event.reply("Use command /timeout @target_name")
+                        .setEphemeral(true)
+                        .queue();
+            }
         }
     }
 
@@ -268,5 +312,6 @@ public class CommandManger extends ListenerAdapter {
         }
         return true;
     }
+
 
 }
