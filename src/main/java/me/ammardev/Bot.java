@@ -8,11 +8,15 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
+import java.util.Scanner;
+
 public class Bot {
 
     public static void main(String[] args) throws InterruptedException {
+        Scanner scanner = new Scanner(System.in);
+        String token = scanner.nextLine();
         JDABuilder builder = JDABuilder
-                .createDefault("OTcyNjU0ODAwMzI1OTgwMjEy.GuhgMS.RHEkUTFY4BHIAk6udyVeVPX4Icn0Wlk3ITj6Ws")
+                .createDefault(token)
                 .setEnabledIntents(GatewayIntent.GUILD_MEMBERS,
                         GatewayIntent.GUILD_MESSAGES)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
